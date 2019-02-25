@@ -1,0 +1,175 @@
+-- COMP9311 16s1 Project 1
+--
+-- MyMyUNSW Solution Template
+
+
+-- Q1: students who have taken more than 55 courses
+
+create or replace function 
+       findnumber(studentID integer) returns int as $$
+declare course_number integer;
+begin
+	select count(student) into course_number 
+	from course_enrolments 
+	where student = studentID;
+	return course_number;
+end;
+$$language plpgsql;
+ 
+create or replace view Q1(unswid, name)
+as
+select People.unswid, People.name from People where findnumber(People.id) > 55;
+
+
+
+-- Q2: get details of the current Heads of Schools
+create or replace function createType()
+returns integer as $$
+declare indict integer;
+begin
+	select 1 into indict from pg_type where typname = 'affKey';
+	if(not (indict = null) ) then
+	   create type affKey as (staff integer, orgUnit integer, role integer, starting date);
+	end if;
+	return indict;
+end;
+$$language plpgsql;
+
+create or replace function 
+       HeadisPrimaryandCurrent(pID integer) 
+returns affKey  as $$
+declare
+	results affKey;
+	roleID integer;
+	startingDate date;
+	primaryRole boolean;
+	isSchool boolean;
+	orgID integer;
+	schoolName LongString;
+	roleName LongString; 
+begin
+	perform createType();
+	select orgUnit, role, starting into orgID,roleID,startingDate
+	from Affiliations where staff = pID and ending is null and isPrimary is True;
+	select longname into schoolName from OrgUnits where id = orgID;
+	select name into roleName from Staff_roles where id = roleID;
+	if (schoolName like '%School%' and roleName = 'Head of School') then
+		   results.staff := pID;
+		   results.orgUnit := orgID;
+		   results.role := roleID; 
+		   results.starting := startingDate;
+		   return results;
+	else	   
+		   return null; 
+        end if;
+end;
+$$language plpgsql;
+create or replace function returnAffkey (integer, integer, integer,date)
+returns affKey as $$
+declare
+	results affKey;
+begin
+	results.staff := $1;
+	results.orgUnit := $2;
+	results.role := $3;
+	results.starting = $4;
+	return results;
+end;
+$$language plpgsql;
+create or replace view Q2(name,school,starting, ending)
+as
+select People.name,OrgUnits.longname,Affiliations.starting, Affiliations.ending from Affiliations,People,OrgUnits where returnAffKey(Affiliations.staff,Affiliations.orgUnit,Affiliations.role,Affiliations.starting) = HeadisPrimaryandCurrent(People.id) and OrgUnits.id = Affiliations.orgUnit and People.id = Affiliations.staff;
+
+
+-- Q3 UOC/ETFS ratio
+create or replace function calRatio (integer, float)
+returns numeric(4,1) as $$
+declare results numeric(4,1);
+begin
+	if($2 > 0) then
+	      results := $1/$2;
+	      return results;
+	else 
+	     return null;
+	end if;
+end;
+$$language plpgsql; 
+create or replace view ratioView
+as
+select id, calRatio(uoc, eftsload) from Subjects;
+
+create or replace view Q3(ratio,nsubjects)
+as
+select calRatio, count(id) from ratioView where not calRatio is null  group by calRatio;
+
+
+
+-- Q4: convenor for the most courses
+create or replace view Q4(name, ncourses)
+as
+--... SQL statements, possibly using other views/functions defined by you ...
+;
+
+
+
+-- Q5: program enrolments from 05S2
+create or replace view Q5a(id)
+as
+--... SQL statements, possibly using other views/functions defined by you ...
+;
+
+create or replace view Q5b(id)
+as
+--... SQL statements, possibly using other views/functions defined by you ...
+;
+
+create or replace view Q5c(id)
+as
+--... SQL statements, possibly using other views/functions defined by you ...
+;
+
+
+
+-- Q6: semester names
+-- Testing case in check.sql: SELECT * FROM Q6(123);
+create or replace function
+	Q6(integer) returns text
+as
+$$
+--... SQL statements, possibly using other views/functions defined by you ...
+$$ language sql;
+
+
+
+-- Q7: percentage of international students, S1 and S2, starting from 2005
+create or replace view Q7(semester, percent)
+as
+--... SQL statements, possibly using other views/functions defined by you ...
+;
+
+
+
+-- Q8: subjects with > 25 course offerings and no staff recorded
+create or replace view Q8(subject, nOfferings)
+as
+--... SQL statements, possibly using other views/functions defined by you ...
+;
+
+
+
+-- Q9: find a good research assistant
+create or replace view Q9(unswid, name)
+as
+--... SQL statements, possibly using other views/functions defined by you ...
+;
+
+
+
+-- Q10: find all students who had been enrolled in all popular subjects
+create or replace view Q10(unswid, name)
+as
+--... SQL statements, possibly using other views/functions defined by you ...
+;
+
+
+
